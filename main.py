@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
 from typing import List, Union, Dict, Tuple
+import os
 
 import config
 
@@ -37,16 +38,18 @@ class Direction(Enum):
 
 
 class Line:
-    def __init__(self, direction: Direction, first: Point, second: Point):
+    def __init__(self, direction: Direction, first: Point, second: Point, program_number: int):
         """
         Line of Go-Ishi
         :param direction: Direction of Line
         :param first: first point of line
         :param second: second point of line
+        :param program_number: program number which made this line
         """
         self.direction = direction
         self.first = first
         self.second = second
+        self.program_number = program_number
 
     def extend_first(self) -> Union[Tuple['Line', Point, bool], Tuple[None, None, bool]]:
         """
@@ -62,7 +65,7 @@ class Line:
 
         new_point = Point(next_y, next_x)
 
-        return Line(self.direction, new_point, self.second), new_point, True
+        return Line(self.direction, new_point, self.second, self.program_number), new_point, True
 
     def extend_second(self) -> Union[Tuple['Line', Point, bool], Tuple[None, None, bool]]:
         """
@@ -79,10 +82,16 @@ class Line:
 
         new_point = Point(next_y, next_x)
 
-        return Line(self.direction, self.first, new_point), new_point, True
+        return Line(self.direction, self.first, new_point, self.program_number), new_point, True
+
+    @property
+    def length(self) -> int:
+        return max(abs(self.first.x - self.second.x), abs(self.first.y - self.second.y)) + 1
 
     def __repr__(self):
-        return 'Line(direction={!r}, first={!r}, second={!r})'.format(self.direction, self.first, self.second)
+        return ('Line(direction={!r}, first={!r}, second={!r}, '
+                'length={!r}, program_number={!r})'.format(self.direction, self.first, self.second, self.length,
+                                                           self.program_number))
 
 
 @dataclass(frozen=True)
@@ -176,9 +185,11 @@ class Table:
                         start = x
                 elif started:
                     started = False
-                    result[x - start].append(Line(Direction.Horizontal, Point(y_ind, start), Point(y_ind, x - 1)))
+                    result[x - start].append(Line(Direction.Horizontal, Point(y_ind, start), Point(y_ind, x - 1),
+                                                  program_number))
             if started:
-                result[x - start + 1].append(Line(Direction.Horizontal, Point(y_ind, start), Point(y_ind, x)))
+                result[x - start + 1].append(Line(Direction.Horizontal, Point(y_ind, start), Point(y_ind, x),
+                                                  program_number))
 
         # vertical
         for x, line in enumerate(zip(*self.table)):
@@ -191,9 +202,9 @@ class Table:
                         start = y
                 elif started:
                     started = False
-                    result[y - start].append(Line(Direction.Vertical, Point(y - 1, x), Point(start, x)))
+                    result[y - start].append(Line(Direction.Vertical, Point(start, x), Point(y - 1, x), program_number))
             if started:
-                result[y - start + 1].append(Line(Direction.Vertical, Point(y, x), Point(start, x)))
+                result[y - start + 1].append(Line(Direction.Vertical, Point(start, x), Point(y, x), program_number))
 
         # diagonal
         for offset in range(config.TABLE_SIZE * 2 - 1):
@@ -212,11 +223,11 @@ class Table:
                         start = dist
                 elif started:
                     started = False
-                    result[dist - start].append(
-                        Line(Direction.Diagonal_UL_BR, Point(y + start, x + start), Point(y + dist - 1, x + dist - 1)))
+                    result[dist - start].append(Line(Direction.Diagonal_UL_BR, Point(y + start, x + start),
+                                                     Point(y + dist - 1, x + dist - 1), program_number))
             if started:
-                result[dist - start + 1].append(
-                    Line(Direction.Diagonal_UL_BR, Point(y + start, x + start), Point(y + dist, x + dist)))
+                result[dist - start + 1].append(Line(Direction.Diagonal_UL_BR, Point(y + start, x + start),
+                                                     Point(y + dist, x + dist), program_number))
 
             started = False
             start = None
@@ -230,16 +241,111 @@ class Table:
                         start = dist
                 elif started:
                     started = False
-                    result[dist - start].append(
-                        Line(Direction.Diagonal_UR_BL, Point(y + start, x - start), Point(y + dist - 1, x - dist + 1)))
+                    result[dist - start].append(Line(Direction.Diagonal_UR_BL, Point(y + start, x - start),
+                                                     Point(y + dist - 1, x - dist + 1), program_number))
             if started:
                 result[dist - start + 1].append(
-                    Line(Direction.Diagonal_UR_BL, Point(y + start, x - start), Point(y + dist, x - dist)))
+                    Line(Direction.Diagonal_UR_BL, Point(y + start, x - start), Point(y + dist, x - dist),
+                         program_number))
 
         return result
 
     def eval_condition(self, program_number: int) -> int:
+        # view 2 -> 1 -> 1
         pass
+
+    def can_win_with_line(self, line: Line) -> Tuple[float, Union[Point, None]]:
+        """
+        return preferable option and priority
+        :param line: line to extend
+        :return: [priority(3: win, 2: checkmate, 1: ok, 0: no advantage or lose),
+        point to pick(None to any)]
+        """
+        if line.length > 5 and self.is_black_line(line):
+            return 0, None
+
+        elif line.length >= 5:
+            return 3, None
+
+        if line.length == 4:
+            ln_f, pf, success_f = self.line_extend_first(line)
+            ln_s, ps, success_s = self.line_extend_second(line)
+            if self.is_black_line(line):
+                if (success_f and ln_f.length == 5) + (success_s and ln_s.length == 5) == 0:
+                    return 0, None
+                elif success_f and ln_f.length == 5:
+                    if self.check_fault(Move(self.opponent(line.program_number), pf)):
+                        return 2.4, pf
+                    return (success_f and ln_f.length == 5) + (success_s and ln_s.length == 5) + 0.4, pf
+
+                if self.check_fault(Move(self.opponent(line.program_number), ps)):
+                    return 2.4, ps
+                return 1.4, ps
+
+            if success_f + success_s == 0:
+                return 0, None
+            elif success_f:
+                if self.check_fault(Move(self.opponent(line.program_number), pf)):
+                    return 2.4, pf
+                return success_f + success_s, pf
+            if self.check_fault(Move(self.opponent(line.program_number), ps)):
+                return 2.4, ps
+            return 1.4, ps
+
+        elif line.length == 3:
+            result = 0
+            ln_f, pf1, success = self.line_extend_first(line)
+            if success:
+                res_f, res_pf = self.can_win_with_line(ln_f)  # already 5
+                result += res_f >= 3
+            ln_s, ps1, success = self.line_extend_second(line)
+            if success:
+                res_s, res_ps = self.can_win_with_line(ln_s)  # already 5
+                result += res_s >= 3
+
+            if result == 2:  # can make 5 whatever opponent does
+                return 2.04, pf1
+
+            if not ln_f and not ln_s:  # can't extend at all
+                return 0, None
+
+            if ln_f and ln_f.length == 4:
+                ln_f, pf2, success = self.line_extend_first(line)
+                if success and ln_f.length == 5:
+                    if self.check_fault(Move(self.opponent(line.program_number), pf1)):
+                        return 1.04, pf2
+                    if self.check_fault(Move(self.opponent(line.program_number), pf2)):
+                        return 1.04, pf1
+            if ln_s and ln_s.length == 4:
+                ln_s, ps2, success = self.line_extend_second(line)
+                if success and ln_s.length == 5:
+                    if self.check_fault(Move(self.opponent(line.program_number), ps1)):
+                        return 1.04, ps2
+                    if self.check_fault(Move(self.opponent(line.program_number), ps2)):
+                        return 1.04, ps1
+            if res_f:
+                return 1.004, res_pf
+            elif res_s:
+                return 1.004, res_ps
+            return 0, None
+
+        elif line.length == 2:
+            result = 0
+            ln_f, pf1, success = self.line_extend_first(line)
+            if success:
+                res_f, res_pf = self.can_win_with_line(ln_f)  # already 5
+                result += res_f >= 3
+            ln_s, ps1, success = self.line_extend_second(line)
+            if success:
+                res_s, res_ps = self.can_win_with_line(ln_s)  # already 5
+                result += res_s >= 3
+
+            if result == 2:  # can make 5 whatever opponent does
+                return 2.0004, pf1
+
+            if not ln_f and not ln_s:  # can't extend at all
+                return 0, None
+        return 0, None
 
     def available_extended_points(self, program_number: int, distance: int = 5) -> List[Point]:
         """
@@ -291,6 +397,17 @@ class Table:
             return self.moves[0].program_number + 1
         return self.moves[-2].program_number
 
+    def opponent(self, program_number: int) -> int:
+        """
+        Create or get next opponent's number
+        :param program_number: yourself
+        :return: int. program number
+        """
+        numbers = {move.program_number for move in self.moves}
+        numbers.add(self.me)
+        numbers.remove(program_number)
+        return list(numbers)[0]
+
     def copy(self) -> 'Table':
         """
         Create copy of `self`.
@@ -301,6 +418,40 @@ class Table:
             for x, val in enumerate(line):
                 new.table[y][x] = val
         return new
+
+    def line_extend_first(self, line: Line) -> Union[Tuple[Line, Point, bool], Tuple[None, None, bool]]:
+        """
+        return line extended in the `first` point direction.
+        :return: [extended_Line, extended_point, whether extended successful]
+        """
+        line, point, success = line.extend_first()
+        if not success or self.check_fault(Move(line.program_number, point)):
+            return line, point, success
+
+        while 0 <= point.y - line.direction.value[0] < config.TABLE_SIZE and \
+                0 <= point.x - line.direction.value[1] < config.TABLE_SIZE and \
+                self.table[point.y - line.direction.value[0]][point.x - line.direction.value[1]] == line.program_number:
+            point = Point(point.y - line.direction.value[0], point.x - line.direction.value[1])
+        line.first = point
+
+        return line, point, success
+
+    def line_extend_second(self, line: Line) -> Union[Tuple[Line, Point, bool], Tuple[None, None, bool]]:
+        """
+        return line extended in the `second` point direction.
+        :return: [extended_Line, extended_point, whether extended successful]
+        """
+        line, point, success = line.extend_second()
+        if not success or self.copy().compute_move(Move(line.program_number, point)):
+            return line, point, success
+
+        while 0 <= point.y + line.direction.value[0] < config.TABLE_SIZE and \
+                0 <= point.x + line.direction.value[1] < config.TABLE_SIZE and \
+                self.table[point.y + line.direction.value[0]][point.x + line.direction.value[1]] == line.program_number:
+            point = Point(point.y + line.direction.value[0], point.x + line.direction.value[1])
+        line.second = point
+
+        return line, point, success
 
     def pretty_print(self):
         """
@@ -326,6 +477,14 @@ class Table:
         lines.pop()
         print('\n'.join(lines))
 
+    def is_black_line(self, line: Line) -> bool:
+        """
+        return whether line is made by black
+        :param line: Line to judge
+        :return: bool
+        """
+        return not self.moves_count or line.program_number == self.moves[0].program_number
+
 
 def load_data(filename: str) -> Tuple[int, List[Move]]:
     """
@@ -333,10 +492,14 @@ def load_data(filename: str) -> Tuple[int, List[Move]]:
     :param filename: filename of moves
     :return: Tuple[total_moves, List[Move]]
     """
-    with open(filename, 'r') as f:
-        data = f.read()
-    count, *data = [list(map(int, d.split(';'))) for d in data.split(',')]
-    count = count[0]
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            data = f.read()
+        count, *data = [list(map(int, d.split(';'))) for d in data.split(',')]
+        count = count[0]
+    else:
+        data = []
+        count = 0
     moves = [Move(program_number, Point(y - config.TABLE_STARTS_WITH_ONE, x - config.TABLE_STARTS_WITH_ONE)) for
              program_number, y, x in data]
 
@@ -371,27 +534,18 @@ if __name__ == '__main__':
     table.pretty_print()
     move = table.available_extended_points(1, 2)
     print(move)
+    choose, max_val, max_point = None, 0, None
     for point in move:
-        table.table[point.y][point.x] = 1
-    table.pretty_print()
-    print(table.get_lines(1))
-    exit()
-    t = Table(3, [Move(0, Point(3, 3)), Move(1, Point(0, 0)), Move(0, Point(3, 4)), Move(0, Point(3, 5)),
-                  Move(0, Point(4, 4)), Move(0, Point(5, 4))])
-    t.compute()
-    print(t.get_lines(0))
-    print(Line(direction=Direction.Horizontal, first=Point(y=3, x=3), second=Point(y=3, x=5)))
-    print()
-    l, m, a = Line(direction=Direction.Horizontal, first=Point(y=3, x=3), second=Point(y=3, x=5)).extend_first()
-    if a:
-        print(t.compute_move(Move(0, m)))
-        l, m, a = l.extend_first()
-        print(t.compute_move(Move(0, m)))
-        l, m, a = l.extend_first()
-        print(t.compute_move(Move(0, m)))
-        l, m, a = l.extend_second()
-        print(t.compute_move(Move(0, m)))
-        l, m, a = l.extend_second()
-        print(t.get_lines(0))
-        print(t.compute_move(Move(0, m)))
-        print(t.get_lines(0))
+        t = table.copy()
+        t.compute_move(Move(table.me, point))
+        m, p = 0, None
+        for line in chain.from_iterable(t.get_lines(t.me).values()):
+            mm, pp = t.can_win_with_line(line)
+            if mm > m:
+                p = pp
+            m += mm
+        if m > max_val:
+            choose = point
+            max_val = m
+            max_point = p
+    print(max_val, max_point)
