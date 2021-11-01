@@ -455,7 +455,7 @@ class Table:
 
     def pretty_print(self):
         """
-        pretty print the table. '―｜・○●'
+        pretty print the table. 'ー｜・🔴⚪︎'
         """
         nums = ['１', '２', '３', '４', '５', '６', '７', '８', '９', '10', '11', '12', '13', '14', '15']
 
@@ -465,12 +465,12 @@ class Table:
             for x in y:
                 if x:
                     if x == self.moves[0].program_number:
-                        line.append('●')
+                        line.append('🔴')
                     else:
-                        line.append('○')
+                        line.append('⚪︎︎')
                 else:
                     line.append('・')
-                line.append('―')
+                line.append('ー')
             line.pop()
             lines.append(''.join(line))
             lines.append('　　' + ('｜　' * config.TABLE_SIZE)[:-1])
