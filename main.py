@@ -9,6 +9,105 @@ import os
 import config
 
 
+class OptionType(Enum):
+    Win = 3
+    Checkmate = 2
+    Preferable = 1
+    OK = 4
+    Trash = 0
+
+
+class Option:
+    def __init__(self, _type: OptionType, depth: int, point: Union['Point', None]):
+        self.type = _type
+        self.depth = depth
+        self.point = point
+
+    def add(self, option: 'Option') -> 'OptionWrapper':
+        ow = OptionWrapper(self)
+        ow.add(option)
+        return ow
+
+    def __repr__(self):
+        return 'Option(type={!r}, depth={!r}, point={!r})'.format(self.type, self.depth, self.point)
+
+
+class OptionWrapper:
+    def __init__(self, option: Option):
+        self.options = [option]
+
+    def add(self, option: Option):
+        ops = self.options[:]
+        new = OptionWrapper(None)
+        new.options = ops
+        new.options.append(option)
+        return new
+
+    def max(self) -> Option:
+        for v in self.options:
+            if v.type == OptionType.Win:
+                return v
+        val = []
+        for v in self.options:
+            if v.type == OptionType.Checkmate:
+                val.append(v)
+        if val:
+            val.sort(key=lambda x: x.depth)
+            return val[0]
+
+        val = []
+        for v in self.options:
+            if v.type == OptionType.Preferable:
+                val.append(v)
+        if val:
+            val.sort(key=lambda x: x.depth)
+            return val[0]
+
+        val = []
+        for v in self.options:
+            if v.type == OptionType.OK:
+                val.append(v)
+        if val:
+            val.sort(key=lambda x: x.depth)
+            return val[0]
+
+        val = []
+        for v in self.options:
+            if v.type == OptionType.Trash:
+                val.append(v)
+        if val:
+            val.sort(key=lambda x: x.depth)
+            return val[0]
+
+    def __lt__(self, other: 'OptionWrapper'):
+        me_win = any(option.type is OptionType.Win for option in self.options)
+        op_win = any(option.type is OptionType.Win for option in other.options)
+        if me_win ^ op_win:
+            return not me_win
+
+        for i in range(1, 3):
+            me_win = any(option.depth == i and option.type is OptionType.Checkmate for option in self.options)
+            op_win = any(option.depth == i and option.type is OptionType.Checkmate for option in other.options)
+            if me_win - op_win:
+                return not op_win > me_win
+
+        for i in range(1, 3):
+            me_win = any(option.depth == i and (option.type is OptionType.Checkmate or
+                                                option.type is OptionType.Preferable) for option in self.options)
+            op_win = any(option.depth == i and (option.type is OptionType.Checkmate or
+                                                option.type is OptionType.Preferable) for option in other.options)
+            if me_win - op_win:
+                return not op_win > me_win
+
+        for i in range(1, 3):
+            me_win = any(option.depth == i and option.type is not OptionType.Trash for option in self.options)
+            op_win = any(option.depth == i and option.type is not OptionType.Trash for option in other.options)
+            if me_win - op_win:
+                return not op_win > me_win
+        return False
+    def __repr__(self):
+        return 'OptionWrapper(options={!r})'.format(self.options)
+
 @dataclass(frozen=True)
 class Point:
     """
@@ -28,10 +127,10 @@ class Point:
 
 
 class Direction(Enum):
-    Horizontal = (0, 1)  # -
-    Vertical = (1, 0)  # |
-    Diagonal_UL_BR = (1, 1)  # \
-    Diagonal_UR_BL = (1, -1)  # /
+    Horizontal = (0, 1)  # →
+    Vertical = (1, 0)  # ↓
+    Diagonal_UL_BR = (1, 1)  # ↘︎
+    Diagonal_UR_BL = (1, -1)  # ↙︎
 
     def __repr__(self):
         return 'Direction.{}'.format(self.name)
@@ -254,7 +353,7 @@ class Table:
         # view 2 -> 1 -> 1
         pass
 
-    def can_win_with_line(self, line: Line) -> Tuple[float, Union[Point, None]]:
+    def can_win_with_line(self, line: Line) -> Option:
         """
         return preferable option and priority
         :param line: line to extend
@@ -262,90 +361,114 @@ class Table:
         point to pick(None to any)]
         """
         if line.length > 5 and self.is_black_line(line):
-            return 0, None
+            return Option(OptionType.Trash, 0, None)
 
         elif line.length >= 5:
-            return 3, None
+            return Option(OptionType.Win, 0, None)
 
         if line.length == 4:
             ln_f, pf, success_f = self.line_extend_first(line)
             ln_s, ps, success_s = self.line_extend_second(line)
             if self.is_black_line(line):
                 if (success_f and ln_f.length == 5) + (success_s and ln_s.length == 5) == 0:
-                    return 0, None
+                    return Option(OptionType.Trash, 1, None)
                 elif success_f and ln_f.length == 5:
                     if self.check_fault(Move(self.opponent(line.program_number), pf)):
-                        return 2.4, pf
-                    return (success_f and ln_f.length == 5) + (success_s and ln_s.length == 5) + 0.4, pf
+                        return Option(OptionType.Checkmate, 1, pf)
+                    return Option(OptionType((success_f and ln_f.length == 5) + (success_s and ln_s.length == 5)),
+                                  1, pf)
 
                 if self.check_fault(Move(self.opponent(line.program_number), ps)):
-                    return 2.4, ps
-                return 1.4, ps
+                    return Option(OptionType.Checkmate, 1, ps)
+                return Option(OptionType.Preferable, 1, ps)
 
             if success_f + success_s == 0:
-                return 0, None
+                return Option(OptionType.Trash, 1, None)
             elif success_f:
                 if self.check_fault(Move(self.opponent(line.program_number), pf)):
-                    return 2.4, pf
-                return success_f + success_s, pf
+                    return Option(OptionType.Checkmate, 1, pf)
+                return Option(OptionType(success_f + success_s), 1, pf)
             if self.check_fault(Move(self.opponent(line.program_number), ps)):
-                return 2.4, ps
-            return 1.4, ps
+                return Option(OptionType.Checkmate, 1, ps)
+            return Option(OptionType.Preferable, 1, ps)
 
         elif line.length == 3:
             result = 0
             ln_f, pf1, success = self.line_extend_first(line)
             if success:
-                res_f, res_pf = self.can_win_with_line(ln_f)  # already 5
-                result += res_f >= 3
+                res_f = self.can_win_with_line(ln_f)  # already 5
+                result += res_f.type is OptionType.Win
             ln_s, ps1, success = self.line_extend_second(line)
             if success:
-                res_s, res_ps = self.can_win_with_line(ln_s)  # already 5
-                result += res_s >= 3
+                res_s = self.can_win_with_line(ln_s)  # already 5
+                result += res_s.type is OptionType.Win
 
             if result == 2:  # can make 5 whatever opponent does
-                return 2.04, pf1
+                return Option(OptionType.Checkmate, 1, res_f.point)
 
             if not ln_f and not ln_s:  # can't extend at all
-                return 0, None
+                return Option(OptionType.Trash, 2, None)
 
+            faults = [0, 0, 0, 0]  # leftside_left, lefttside_right, rightside_left, rightside_right
             if ln_f and ln_f.length == 4:
                 ln_f, pf2, success = self.line_extend_first(line)
                 if success and ln_f.length == 5:
                     if self.check_fault(Move(self.opponent(line.program_number), pf1)):
-                        return 1.04, pf2
+                        faults[1] = 1
                     if self.check_fault(Move(self.opponent(line.program_number), pf2)):
-                        return 1.04, pf1
+                        faults[0] = 1
             if ln_s and ln_s.length == 4:
                 ln_s, ps2, success = self.line_extend_second(line)
                 if success and ln_s.length == 5:
                     if self.check_fault(Move(self.opponent(line.program_number), ps1)):
-                        return 1.04, ps2
+                        faults[2] = 1
                     if self.check_fault(Move(self.opponent(line.program_number), ps2)):
-                        return 1.04, ps1
-            if res_f:
-                return 1.004, res_pf
-            elif res_s:
-                return 1.004, res_ps
-            return 0, None
+                        faults[3] = 1
+            if sum(faults) >= 2:
+                if sum(faults[:2]) and sum(sum[2:]) != 2:
+                    if faults[0]:
+                        return Option(OptionType.Checkmate, 2, pf1)
+                    return Option(OptionType.Checkmate, 2, pf2)
+                if faults[3]:
+                    return Option(OptionType.Checkmate, 2, ps1)
+                return Option(OptionType.Checkmate, 2, ps2)
+            if sum(faults):
+                if faults[0]:
+                    return Option(OptionType.Preferable, 2, pf1)
+                elif faults[1]:
+                    return Option(OptionType.Preferable, 2, pf2)
+                elif faults[2]:
+                    return Option(OptionType.Preferable, 2, ps2)
+                return Option(OptionType.Preferable, 2, ps1)
+
+            if pf1:
+                return Option(OptionType.OK, 2, pf1)
+            elif ps1:
+                return Option(OptionType.OK, 2, ps1)
+
+            return Option(OptionType.Trash, 2, pf1)
 
         elif line.length == 2:
             result = 0
             ln_f, pf1, success = self.line_extend_first(line)
             if success:
-                res_f, res_pf = self.can_win_with_line(ln_f)  # already 5
-                result += res_f >= 3
+                res_f = self.can_win_with_line(ln_f)  # already 5
+                result += res_f.type is OptionType.Win
             ln_s, ps1, success = self.line_extend_second(line)
             if success:
-                res_s, res_ps = self.can_win_with_line(ln_s)  # already 5
-                result += res_s >= 3
+                res_s = self.can_win_with_line(ln_s)  # already 5
+                result += res_s.type is OptionType.Win
 
             if result == 2:  # can make 5 whatever opponent does
-                return 2.0004, pf1
+                return Option(OptionType.Win, 1, res_f.point)
 
             if not ln_f and not ln_s:  # can't extend at all
-                return 0, None
-        return 0, None
+                return Option(OptionType.Trash, 3, None)
+            if ln_f:
+                return Option(OptionType.OK, 3, pf1)
+            elif ln_s:
+                return Option(OptionType.OK, 3, ps1)
+        return Option(OptionType.Trash, 0, None)
 
     def available_extended_points(self, program_number: int, distance: int = 5) -> List[Point]:
         """
@@ -534,18 +657,17 @@ if __name__ == '__main__':
     table.pretty_print()
     move = table.available_extended_points(1, 2)
     print(move)
-    choose, max_val, max_point = None, 0, None
+    choose, max_val = None, OptionWrapper(Option(OptionType.Trash, 0, None))
     for point in move:
         t = table.copy()
         t.compute_move(Move(table.me, point))
-        m, p = 0, None
+        m = Option(OptionType.Trash, 0, None)
         for line in chain.from_iterable(t.get_lines(t.me).values()):
-            mm, pp = t.can_win_with_line(line)
-            if mm > m:
-                p = pp
-            m += mm
-        if m > max_val:
+            mm = t.can_win_with_line(line)
+            m = m.add(mm)
+        if max_val < m:
+            print('no', m.options)
             choose = point
             max_val = m
-            max_point = p
-    print(max_val, max_point)
+        print(point, m, m.max())
+    print(max_val.max())
