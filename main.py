@@ -286,8 +286,11 @@ class Table:
         Compute all moves and update table. If there is any foul move or win move, return it
         :return: [Move, is_win] if foul move or Win move is there. Otherwise, [None, None]
         """
+        prev = None
         for move in self.moves:
-
+            if move.program_number == prev:
+                return move, True
+            prev = move.program_number
             if self.check_foul(move):
                 return move, False
             self.table[move.point] = move.program_number
