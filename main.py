@@ -868,9 +868,10 @@ if __name__ == '__main__':
             exit()
         else:
             raise ValueError("Player number {} can't place here, {}".format(move.program_number, move.point))
-    print('chose move:', move)
-    print('\n'*2)
+
+    print('\n' * 2)
     move, op = table.choose_next_move(table.me, depth=3, best=3)
+    print('chose move:', move)
     foul = table.compute_move(move)
     if foul:
         print('foul', move)

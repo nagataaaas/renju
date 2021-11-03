@@ -47,7 +47,7 @@ class GUI(Frame):
                 return
             if Point(y, x) in self.table.table:
                 print("already placed")
-                messagebox.showinfo("already placed")
+                messagebox.showinfo("already placed", "already placed")
                 return
 
             me = self.table.me
