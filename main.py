@@ -289,7 +289,7 @@ class Table:
         prev = None
         for move in self.moves:
             if move.program_number == prev:
-                return move, True
+                return move, False
             prev = move.program_number
             if self.check_foul(move):
                 return move, False
@@ -830,7 +830,7 @@ def load_data(filename: str) -> Tuple[int, List[Move]]:
              program_number, y, x in data]
 
     if count != len(moves):
-        if config.RAISE_ON_CSV_ERROR:
+        if config.RAISE_ON_CSV_COUNT_ERROR:
             raise ValueError('total count is incorrect. (given: {}, moves_length: {})'.format(count, len(moves)))
         warnings.warn('total count is incorrect. (given: {}, moves_length: {})'.format(count, len(moves)))
 
