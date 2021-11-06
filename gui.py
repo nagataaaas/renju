@@ -21,7 +21,7 @@ class GUI(Frame):
 
         self.create_widgets()
 
-        self.table = Table(0, [])
+        self.table = Table([])
         self.is_cpu_first = bool(random.randint(0, 1))
         self.state = 1  # 1: playing, 2: end
         if self.is_cpu_first:

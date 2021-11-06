@@ -189,23 +189,31 @@ class Direction(Enum):
     Diagonal_UL_BR = (1, 1)  # ↘
     Diagonal_UR_BL = (1, -1)  # ↙
 
-    def __repr__(self):
-        return 'Direction.{}'.format(self.name)
 
-
+@dataclass
 class Line:
-    def __init__(self, direction: Direction, first: Point, second: Point, program_number: int):
-        """
-        Line of Go-Ishi
-        :param direction: Direction of Line
-        :param first: first point of line
-        :param second: second point of line
-        :param program_number: program number which made this line
-        """
-        self.direction = direction
-        self.first = first
-        self.second = second
-        self.program_number = program_number
+    """
+    Line of Go-Ishi
+    :param direction: Direction of Line
+    :param first: first point of line
+    :param second: second point of line
+    :param program_number: program number which made this line
+    """
+    direction: Direction
+    first: Point
+    second: Point
+    program_number: int
+
+    def __post_init__(self):
+
+        dy = self.second.y - self.first.y
+        dx = self.second.x - self.first.x
+        if (dy and not self.direction.value[0]) or (dx and not self.direction.value[1]) or \
+                (self.direction.value[0] and self.direction.value[1] and
+                 dy / self.direction.value[0] != dx / self.direction.value[1]):
+            raise ValueError('Looks like direction `{}` is not suitable for points [{}, {}]'.format(self.direction,
+                                                                                                    self.first,
+                                                                                                    self.second))
 
     def extend_first(self) -> Union[Tuple['Line', Point, bool], Tuple[None, None, bool]]:
         """
@@ -264,19 +272,17 @@ class Move:
 
 
 class Table:
-    moves_count: int
     moves: List[Move]
     table: Dict[Point, Union[None, int]]  # point to program_number. if not set, return None
 
-    def __init__(self, moves_count: int, moves: List[Move]):
+    def __init__(self, moves: List[Move]):
         """
         Table of Renju
-        :param moves_count: All moves count
         :param moves: All moves
 
         :var
         """
-        self.moves_count = moves_count
+        self.moves_count = len(moves)
         self.moves = moves
 
         self.table: Dict[Point, Union[None, int]] = defaultdict(lambda: None)
@@ -726,7 +732,7 @@ class Table:
         Create copy of `self`.
         :return: Table. copy of itself.
         """
-        new = Table(self.moves_count, self.moves[:])
+        new = Table(self.moves[:])
         new.table = self.table.copy()
         return new
 
@@ -837,16 +843,16 @@ def load_data(filename: str) -> Tuple[int, List[Move]]:
     return count, moves
 
 
-def write_data(filename: str, moves: List[Move]):
+def write_data(filename: str, table: Table):
     """
     Write moves with given filename
     :param filename: filename to write
-    :param moves: moves to write
+    :param table: table to write
     """
     with open(filename, 'w') as f:
-        f.write('{},{}'.format(str(len(moves)), ','.join(
+        f.write('{},{}'.format(str(table.moves_count), ','.join(
             [';'.join(map(str, [move.program_number, move.point.y + config.TABLE_STARTS_WITH_ONE,
-                                move.point.x + config.TABLE_STARTS_WITH_ONE])) for move in moves])))
+                                move.point.x + config.TABLE_STARTS_WITH_ONE])) for move in table.moves])))
 
 
 if __name__ == '__main__':
