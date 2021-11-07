@@ -11,32 +11,32 @@
   - [Point](#point)
     - [init(y: int, x: int)](#inity-int-x-int)
   - [Line](#line)
-    - [init](#initdirection-directiondirection-first-pointpoint-second-pointpoint-program_number-int)
-    - [extend_first()](#extend_first---tuplelineline-pointpoint-true-or-tuplenull-null-false)
-    - [extend_second()](#extend_second---tuplelineline-pointpoint-true-or-tuplenull-null-false)
+    - [init(direction: Direction, first: Point, second: Point, program_number: int)](#initdirection-direction-first-point-second-point-program_number-int)
+    - [extend_first()](#extend_first---tupleline-point-true-or-tuplenull-null-false)
+    - [extend_second()](#extend_second---tupleline-point-true-or-tuplenull-null-false)
     - [length](#length---int)
   - [Move](#move)
     - [init(program_number: int, point: Point)](#initprogram_number-int-point-point)
   - [Option](#option)
-    - [init(type: OptionType, win_to: int, point: Point)](#inittype-optiontypeoptiontype-win_to-int-point-point)
-    - [add(option: Option)](#addoption-optionoption---optioncontainer)
+    - [init(type: OptionType, win_to: int, point: Point)](#inittype-optiontype-win_to-int-point-point)
+    - [add(option: Option)](#addoption-option---optioncontainer)
   - [OptionContainer](#optioncontainer)
     - [init(options... : Option...)](#initoptions--option)
-    - [add(option : Option or OptionContainer)](#addoption--optionoption-or-optioncontaineroptioncontainer---optioncontainer)
+    - [add(option : Option or OptionContainer)](#addoption--option-or-optioncontainer---optioncontainer)
     - [max](#max---option)
     - [winnable_with_skip](#winnable_with_skip---bool)
     - [score](#score---int)
   - [Table](#table)
     - [init(moves: Array[Move])](#initmoves-arraymove)
-    - [compute()](#compute---tuplenull-null-or-tuplemovemove-bool)
-    - [compute_move(move: [Move])](#compute_movemove-movemove---bool)
-    - [check_foul(move: [Move])](#check_foulmove-movemove---bool)
+    - [compute()](#compute---tuplenull-null-or-tuplemove-bool)
+    - [compute_move(move: [Move])](#compute_move-move---bool)
+    - [check_foul(move: [Move])](#check_foulmove-move---bool)
     - [is_win(program_number: int)](#is_winprogram_number-int---bool)
     - [get_lines(program_number: int)](#get_linesprogram_number-int---mapint-arrayline)
-    - [choose_next_move(program_number: int, depth: int = 1, best = 5)](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontainer)
-    - [find_options(line: Line)](#find_optionsline-lineline---optioncontainer)
-    - [line_extend_first(line: Line, foul_check: bool)](#line_extend_firstline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)
-    - [line_extend_second(line: Line, foul_check: bool)](#line_extend_secondline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)
+    - [choose_next_move(program_number: int, depth: int = 1, best = 5)](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemove-optioncontainer)
+    - [find_options(line: Line)](#find_optionsline-line---optioncontainer)
+    - [line_extend_first(line: Line, foul_check: bool)](#line_extend_firstline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)
+    - [line_extend_second(line: Line, foul_check: bool)](#line_extend_secondline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)
     - [available_extended_points(program_number: int, distance: int)](#available_extended_pointsprogram_number-int-distance-int---arraypoint)
     - [me](#me---int)
     - [opponent(program_number: int)](#opponentprogram_number-int---int)
@@ -91,15 +91,15 @@
 - `second`: [`Line`](#line)を作る両端の2点のうち、より正方向に近い方
 - `program_number`: [`Line`](#line)を作成したPlayerの番号
 
-### extend_first() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
+### extend_first() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
 自身を、負方向に長さ1つ伸ばすよう試みる。盤面内に収まれば、(伸ばされた後の[Line](#line), 新たに設置された[`Point`](#point), True), 
-不可能であれば`(Null, Null, False)`を返す。
-盤面情報も加味した可否判断は[Table.line_extend_first](#line_extend_firstline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
+不可能であれば`(Null, False)`を返す。
+盤面情報も加味した可否判断は[Table.line_extend_first](#line_extend_firstline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
 
-### extend_second() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
+### extend_second() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
 自身を、正方向に長さ1つ伸ばすよう試みる。盤面内に収まれば、(伸ばされた後の[`Line`](#line), 新たに設置された[`Point`](#point), True), 
-不可能であれば`(Null, Null, False)`を返す。
-盤面情報も加味した可否判断は[`Table.line_extend_second`](#line_extend_secondline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
+不可能であれば`(Null, False)`を返す。
+盤面情報も加味した可否判断は[`Table.line_extend_second`](#line_extend_secondline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
 
 ### length -> int
 自身の長さを返却する`property`
@@ -131,15 +131,15 @@
 - `option`: [`Option`](#option) または [`OptionContainer`](#optioncontainer)
 
 ### max -> [`Option`](#option)
-> 自身に格納されている[`Option`](#option)の中で、最も[`Option.type`](#inittype-optiontypeoptiontype-win_to-int-point-point)
->の[`優先度`](#optiontype)が高いもの、特に、その中で最も[`win_to`](#inittype-optiontypeoptiontype-win_to-int-point-point)が
+> 自身に格納されている[`Option`](#option)の中で、最も[`Option.type`](#inittype-optiontype-win_to-int-point-point)
+>の[`優先度`](#optiontype)が高いもの、特に、その中で最も[`win_to`](#inittype-optiontype-win_to-int-point-point)が
 >小さいものを返すproperty
 
 ### winnable_with_skip -> bool
 > 相手のターンを迎えた後、必ず勝てるかどうかのproperty
 >
 > `Win`や`Checkmate`の[`Option`](#option)が格納されてるか, `ToCheckmate`の[`Option`](#option)の
->[`Option.point`](#inittype-optiontypeoptiontype-win_to-int-point-point)が重複なしで2つ以上ならTrue, 
+>[`Option.point`](#inittype-optiontype-win_to-int-point-point)が重複なしで2つ以上ならTrue, 
 >それ以外ならFalse
 
 ### score -> int
@@ -162,7 +162,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 >場所に設置すれば Tuple[その[`Move`](#move), False], どちらも無ければ Tuple[Null, Null] を返す
 
 ### compute_move(move: [[`Move`](#move)]) -> bool
-> 与えられた[`Move`](#move)を[`check_foul`](#check_foulmove-movemove---bool)を用いて評価し、禁じ手かどうかを返却する。
+> 与えられた[`Move`](#move)を[`check_foul`](#check_foulmove-move---bool)を用いて評価し、禁じ手かどうかを返却する。
 >禁じ手でなければ、自身の[`moves`](#initmoves-arraymove)に追加し、
 >[`moves_count`](#initmoves-arraymove)に1加算する。
 
@@ -188,7 +188,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 ### choose_next_move(program_number: int, depth: int = 1, best = 5) -> Tuple[[`Move`](#move), [`OptionContainer`](#optioncontainer)]
 > `program_number`にとって最良と思われる次の自身の[`Move`](#move)を計算し、[`OptionContainer`](#optioncontainer)とともに返す。
->depthが1になるまで、次の相手の手を読まない段階で最良と思われる上位`best`個について [`choose_next_move(対戦相手のnumber, depth-1, best)`](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontainer)
+>depthが1になるまで、次の相手の手を読まない段階で最良と思われる上位`best`個について [`choose_next_move(対戦相手のnumber, depth-1, best)`](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemove-optioncontainer)
 >を用いて相手の次の行動を予測し再帰的に評価する。
 
 - `program_number`: 計算するPlayerの番号
@@ -197,20 +197,20 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 ### find_options(line: [`Line`](#line)) -> [`OptionContainer`](#optioncontainer)
 > 与えられた[`Line`](#line)に対して、取り得る[`Option`](#option)をまとめた[`OptionContainer`](#optioncontainer)
->を返却する。[`Line.length`](#initdirection-directiondirection-first-pointpoint-second-pointpoint-program_number-int)
+>を返却する。[`Line.length`](#initdirection-direction-first-point-second-point-program_number-int)
 >が5以上の場合は[`Line`](#line)自体の評価を, 4の場合は両端を見た評価を、3, 2の場合は両端から2つ離れた[`Point`](#point)までを見た評価を
 >かえす。1の場合はよしなに(多分、そこまで細かくは見なくても強さはそんなに変わらないと思う)
 
 - `line`: 評価する[`Line`](#line)
 
-### line_extend_first(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
-> [`Line.extend_first`](#extend_first---tuplelineline-pointpoint-true-or-tuplenull-null-false)と同様に負方向に
->[`Line`](#line)を延長する。ただし、[`Line.extend_first`](#extend_first---tuplelineline-pointpoint-true-or-tuplenull-null-false)の
+### line_extend_first(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+> [`Line.extend_first`](#extend_first---tupleline-point-true-or-tuplenull-null-false)と同様に負方向に
+>[`Line`](#line)を延長する。ただし、[`Line.extend_first`](#extend_first---tupleline-point-true-or-tuplenull-null-false)の
 >不可能判定に加え、新たに設置する[`Point`](#point)が禁じ手になる場合も失敗とする。
 
-### line_extend_second(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
-> [`Line.extend_second`](#extend_second---tuplelineline-pointpoint-true-or-tuplenull-null-false)と同様に負方向に
->[`Line`](#line)を延長する。ただし、[`Line.extend_second`](#extend_second---tuplelineline-pointpoint-true-or-tuplenull-null-false)の
+### line_extend_second(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+> [`Line.extend_second`](#extend_second---tupleline-point-true-or-tuplenull-null-false)と同様に負方向に
+>[`Line`](#line)を延長する。ただし、[`Line.extend_second`](#extend_second---tupleline-point-true-or-tuplenull-null-false)の
 >不可能判定に加え、新たに設置する[`Point`](#point)が禁じ手になる場合も失敗とする。
 
 ### available_extended_points(program_number: int, distance: int) -> Array[Point]
