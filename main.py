@@ -1,12 +1,13 @@
+import os
+import random
+import sys
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
 from typing import List, Union, Dict, Tuple
-import random
-import os
-import sys
+
 import config
 
 
@@ -23,17 +24,17 @@ class OptionType(Enum):
         return self.value
 
 
+@dataclass
 class Option:
-    def __init__(self, _type: OptionType, win_to: int, point: Union['Point', None]):
-        """
-        Available option
-        :param _type: type of option
-        :param win_to: how many moves needed to win `actually`
-        :param point: point to place
-        """
-        self.type = _type
-        self.win_to = win_to
-        self.point = point
+    """
+    Available option
+    :param type: type of option
+    :param win_to: how many moves needed to win `actually`
+    :param point: point to place
+    """
+    type: OptionType
+    win_to: int
+    point: Union['Point', None]
 
     def add(self, option: 'Option') -> 'OptionContainer':
         """
@@ -44,9 +45,6 @@ class Option:
         ow = OptionContainer(self)
         ow.add(option)
         return ow
-
-    def __repr__(self):
-        return 'Option(type={!r}, win_to={!r}, point={!r})'.format(self.type, self.win_to, self.point)
 
 
 class OptionContainer:
@@ -115,10 +113,10 @@ class OptionContainer:
         trashes.sort(key=lambda x: x.win_to)
         return trashes[0]
 
-    def winnable_with_skip(self, skip=1) -> bool:
+    @property
+    def winnable_with_skip(self) -> bool:
         """
         return if winnable with enemy's turn.
-        :param skip: enemy's turns amount consider to.
         :return: bool. winnable or not
         """
         if any(option.type is OptionType.Win or option.type is OptionType.Checkmate for option in self.options):
@@ -126,7 +124,7 @@ class OptionContainer:
             return True
 
         if len(set(option.point for option in self.options
-                   if option.type is OptionType.ToCheckmate)) >= skip + 1:
+                   if option.type is OptionType.ToCheckmate)) >= 2:
             # opponent doesn't have enough turns to deals with it.
             return True
 
@@ -142,7 +140,7 @@ class OptionContainer:
         # each score needs to be more adjusted.
         # to make more strong CPU
         result = 0
-        if self.winnable_with_skip():
+        if self.winnable_with_skip:
             result += 9999999
         for option in self.options:
             if option.type == OptionType.Win:
@@ -295,7 +293,9 @@ class Table:
         prev = None
         for move in self.moves:
             if move.program_number == prev:
-                return move, False
+                if config.RAISE_ON_CSV_COUNT_ERROR:
+                    return move, False
+                warnings.warn('It seems like player is not playing alternately')
             prev = move.program_number
             if self.check_foul(move):
                 return move, False
@@ -312,13 +312,13 @@ class Table:
         :param program_number: program_number check to
         :return: bool
         """
-        is_black = not self.moves_count or program_number == self.moves[0].program_number
+        is_black = self.is_black(program_number)
 
-        current_score = self.get_lines(program_number)
+        lines = self.get_lines(program_number)
 
         if is_black:
-            return max(current_score.keys()) == 5
-        return max(current_score.keys()) >= 5
+            return max(lines.keys()) == 5
+        return max(lines.keys()) >= 5
 
     def compute_move(self, move: Move) -> bool:
         """
@@ -344,7 +344,7 @@ class Table:
             # already placed
             return True
 
-        is_black = not self.moves_count or program_number == self.moves[0].program_number
+        is_black = self.is_black(move.program_number)
 
         if not is_black:
             # white has no foul moves
@@ -408,7 +408,7 @@ class Table:
 
         return result
 
-    def choose_next_move(self, program_number: int, depth=1, best=5) -> Tuple[Move, Union[OptionContainer, None]]:
+    def choose_next_move(self, program_number: int, depth=1, best=5) -> Tuple[Move, OptionContainer]:
         """
         calculate the best move and return OptionContainer for the recursive calc.
         :param program_number: Compute as
@@ -449,7 +449,7 @@ class Table:
                 table.compute_move(Move(pn, point))
                 oc = OptionContainer()
                 for line in chain.from_iterable(table.get_lines(pn).values()):
-                    _oc = table.find_best_option(line)
+                    _oc = table.find_options(line)
                     if _oc.max.type == OptionType.Win:
                         # if winnable as myself, use this move
                         #   OR
@@ -464,10 +464,10 @@ class Table:
 
         win_to, points = [999, 999], [None, None]
         for i in range(2):
-            if any(ev[0].winnable_with_skip() for ev in scores[i]):
+            if any(ev[0].winnable_with_skip for ev in scores[i]):
                 # if there are any options enemy winnable
                 for ev, _point in scores[i]:
-                    if ev.winnable_with_skip():
+                    if ev.winnable_with_skip:
                         _win_to = min(op.win_to for op in ev.options if op.type in (OptionType.Win,
                                                                                     OptionType.Checkmate,
                                                                                     OptionType.ToCheckmate))
@@ -499,13 +499,13 @@ class Table:
         diff.sort()
         return Move(program_number, diff[0][4]), diff[0][1] or OptionContainer()
 
-    def find_best_option(self, line: Line) -> OptionContainer:
+    def find_options(self, line: Line) -> OptionContainer:
         """
         return preferable option and current condition
         :param line: line to be computed
         :return: OptionContainer
         """
-        is_black = self.is_black_line(line)
+        is_black = self.is_black(line.program_number)
         if line.length > 5 and is_black:
             # for black, more than 5-length line is a total trash
             return OptionContainer(Option(OptionType.Trash, 999, None))
@@ -560,7 +560,7 @@ class Table:
                             return OptionContainer(Option(OptionType.Checkmate, 1, p))
                         options.append(Option(OptionType.ToCheckmate, 1, p))
                     else:
-                        next = self.find_best_option(ln).max
+                        next = self.find_options(ln).max
                         if next.type is OptionType.Checkmate:
                             options.append(Option(OptionType.ToCheckmate, 2, p))
                         elif next.type is OptionType.ToCheckmate:
@@ -646,7 +646,7 @@ class Table:
                         # can create 5
                         options.append(Option(OptionType.ToCheckmate, 1, p))
                     else:
-                        next = self.find_best_option(ln).max
+                        next = self.find_options(ln).max
                         if next.type is OptionType.Checkmate:
                             options.append(Option(OptionType.ToCheckmate, next.win_to + 1, p))
                         elif next.type is OptionType.ToCheckmate:
@@ -668,7 +668,7 @@ class Table:
 
         return OptionContainer(Option(OptionType.Trash, 0, None))
 
-    def available_extended_points(self, program_number: int, distance: int = 5) -> List[Point]:
+    def available_extended_points(self, program_number: int, distance: int) -> List[Point]:
         """
         return available points which is an extension of line
         :param program_number: Compute as
@@ -809,13 +809,13 @@ class Table:
         lines.pop()
         print('\n'.join(lines))
 
-    def is_black_line(self, line: Line) -> bool:
+    def is_black(self, program_number: int) -> bool:
         """
-        return whether line is made by black
-        :param line: Line to judge
+        return whether player of program_number is black
+        :param program_number: player number
         :return: bool
         """
-        return not self.moves_count or line.program_number == self.moves[0].program_number
+        return not self.moves_count or program_number == self.moves[0].program_number
 
 
 def load_data(filename: str) -> Tuple[int, List[Move]]:

@@ -1,6 +1,7 @@
+from random import randint
 from tkinter import Tk, Button, Frame, Label, messagebox, StringVar
+
 from main import *
-import random
 
 
 class GUI(Frame):
@@ -22,7 +23,7 @@ class GUI(Frame):
         self.create_widgets()
 
         self.table = Table([])
-        self.is_cpu_first = bool(random.randint(0, 1))
+        self.is_cpu_first = bool(randint(0, 1))
         self.state = 1  # 1: playing, 2: end
         if self.is_cpu_first:
             self.cpu_move()

@@ -1,10 +1,7 @@
 import unittest
-import sys
 
-from datetime import date, datetime
-
-from main import (Table, Move, Point, load_data, write_data, Line, Direction)
 import config
+from main import (Table, Move, Point, load_data, write_data, Line, Direction)
 
 
 class TestIO(unittest.TestCase):
