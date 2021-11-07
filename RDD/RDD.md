@@ -16,35 +16,35 @@
     - [extend_second()](#extend_second---tuplelineline-pointpoint-true-or-tuplenull-null-false)
     - [length](#length---int)
   - [Move](#move)
-    - [init(program_number: int, point: Point)](#initprogram_number-int-point-pointpoint)
+    - [init(program_number: int, point: Point)](#initprogram_number-int-point-point)
   - [Option](#option)
-    - [init(type: OptionType, win_to: int, point: Point)](#inittype-optiontypeoptiontype-win_to-int-point-pointpoint)
-    - [add(option: Option)](#addoption-optionoption---optioncontaineroptioncontainer)
+    - [init(type: OptionType, win_to: int, point: Point)](#inittype-optiontypeoptiontype-win_to-int-point-point)
+    - [add(option: Option)](#addoption-optionoption---optioncontainer)
   - [OptionContainer](#optioncontainer)
-    - [init(options... : Option...)](#initoptions--optionoption)
-    - [add(option : Option or OptionContainer)](#addoption--optionoption-or-optioncontaineroptioncontainer---optioncontaineroptioncontainer)
-    - [max](#max---optionoption)
+    - [init(options... : Option...)](#initoptions--option)
+    - [add(option : Option or OptionContainer)](#addoption--optionoption-or-optioncontaineroptioncontainer---optioncontainer)
+    - [max](#max---option)
     - [winnable_with_skip](#winnable_with_skip---bool)
     - [score](#score---int)
   - [Table](#table)
-    - [init(moves: Array[Move])](#initmoves-arraymovemove)
+    - [init(moves: Array[Move])](#initmoves-arraymove)
     - [compute()](#compute---tuplenull-null-or-tuplemovemove-bool)
     - [compute_move(move: [Move])](#compute_movemove-movemove---bool)
     - [check_foul(move: [Move])](#check_foulmove-movemove---bool)
     - [is_win(program_number: int)](#is_winprogram_number-int---bool)
-    - [get_lines(program_number: int)](#get_linesprogram_number-int---mapint-arraylineline)
-    - [choose_next_move(program_number: int, depth: int = 1, best = 5)](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontaineroptioncontainer)
-    - [find_options(line: Line)](#find_optionsline-lineline---optioncontaineroptioncontainer)
+    - [get_lines(program_number: int)](#get_linesprogram_number-int---mapint-arrayline)
+    - [choose_next_move(program_number: int, depth: int = 1, best = 5)](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontainer)
+    - [find_options(line: Line)](#find_optionsline-lineline---optioncontainer)
     - [line_extend_first(line: Line, foul_check: bool)](#line_extend_firstline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)
     - [line_extend_second(line: Line, foul_check: bool)](#line_extend_secondline-lineline-foul_check-bool---tuplelineline-pointpoint-true-or-tuplenull-null-false)
     - [available_extended_points(program_number: int, distance: int)](#available_extended_pointsprogram_number-int-distance-int---arraypoint)
     - [me](#me---int)
     - [opponent(program_number: int)](#opponentprogram_number-int---int)
-    - [copy()](#copy---tabletable)
+    - [copy()](#copy---table)
     - [is_black(program_number: int)](#is_blackprogram_number-int---bool)
 - [Function](#function)
-  - [load_data(filename: str) -> Tuple[int, Array[Move]]](#load_datafilename-str---tupleint-arraymovemove)
-  - [write_data(filename: str, table: Table)](#write_datafilename-str-table-tabletable)
+  - [load_data(filename: str) -> Tuple[int, Array[Move]]](#load_datafilename-str---tupleint-arraymove)
+  - [write_data(filename: str, table: Table)](#write_datafilename-str-table-table)
   
 # Config
 ## TABLE_SIZE
@@ -131,15 +131,15 @@
 - `option`: [`Option`](#option) または [`OptionContainer`](#optioncontainer)
 
 ### max -> [`Option`](#option)
-> 自身に格納されている[`Option`](#option)の中で、最も[`Option.type`](#inittype-optiontypeoptiontype-win_to-int-point-pointpoint)
->の[`優先度`](#optiontype)が高いもの、特に、その中で最も[`win_to`](#inittype-optiontypeoptiontype-win_to-int-point-pointpoint)が
+> 自身に格納されている[`Option`](#option)の中で、最も[`Option.type`](#inittype-optiontypeoptiontype-win_to-int-point-point)
+>の[`優先度`](#optiontype)が高いもの、特に、その中で最も[`win_to`](#inittype-optiontypeoptiontype-win_to-int-point-point)が
 >小さいものを返すproperty
 
 ### winnable_with_skip -> bool
 > 相手のターンを迎えた後、必ず勝てるかどうかのproperty
 >
 > `Win`や`Checkmate`の[`Option`](#option)が格納されてるか, `ToCheckmate`の[`Option`](#option)の
->[`Option.point`](#inittype-optiontypeoptiontype-win_to-int-point-pointpoint)が重複なしで2つ以上ならTrue, 
+>[`Option.point`](#inittype-optiontypeoptiontype-win_to-int-point-point)が重複なしで2つ以上ならTrue, 
 >それ以外ならFalse
 
 ### score -> int
@@ -163,8 +163,8 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 ### compute_move(move: [[`Move`](#move)]) -> bool
 > 与えられた[`Move`](#move)を[`check_foul`](#check_foulmove-movemove---bool)を用いて評価し、禁じ手かどうかを返却する。
->禁じ手でなければ、自身の[`moves`](#initmoves-arraymovemove)に追加し、
->[`moves_count`](#initmoves-arraymovemove)に1加算する。
+>禁じ手でなければ、自身の[`moves`](#initmoves-arraymove)に追加し、
+>[`moves_count`](#initmoves-arraymove)に1加算する。
 
 - `move`: 評価する[`Move`](#move)
 
@@ -180,7 +180,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 ### get_lines(program_number: int) -> Map[int: Array[[`Line`](#line)]]
 > 該当の`program_number`があらわすPlayerが作成した全ての連を、その長さごとに配列に分け、長さをkeyにした連想配列に格納して返す。
-> [`table`](#initmoves-arraymovemove)から、valueが`program_number`と等しいkeyの配列を作成し、各[`Direction`](#direction)ごとに
+> [`table`](#initmoves-arraymove)から、valueが`program_number`と等しいkeyの配列を作成し、各[`Direction`](#direction)ごとに
 >　"配列から適当に[`Point`](#point)を選び、length=0の[`Line`](#line)を作る" -> "配列内にその[`Point`](#point)が存在する場合に限り、
 >[`Line`](#line)をその点のある方に伸ばす" を配列から要素が無くなるまで繰り返すことで、全ての方向の全ての[`Line`](#line)を取得できる。
 
@@ -188,7 +188,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 ### choose_next_move(program_number: int, depth: int = 1, best = 5) -> Tuple[[`Move`](#move), [`OptionContainer`](#optioncontainer)]
 > `program_number`にとって最良と思われる次の自身の[`Move`](#move)を計算し、[`OptionContainer`](#optioncontainer)とともに返す。
->depthが1になるまで、次の相手の手を読まない段階で最良と思われる上位`best`個について [`choose_next_move(対戦相手のnumber, depth-1, best)`](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontaineroptioncontainer)
+>depthが1になるまで、次の相手の手を読まない段階で最良と思われる上位`best`個について [`choose_next_move(対戦相手のnumber, depth-1, best)`](#choose_next_moveprogram_number-int-depth-int--1-best--5---tuplemovemove-optioncontainer)
 >を用いて相手の次の行動を予測し再帰的に評価する。
 
 - `program_number`: 計算するPlayerの番号
@@ -214,7 +214,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 >不可能判定に加え、新たに設置する[`Point`](#point)が禁じ手になる場合も失敗とする。
 
 ### available_extended_points(program_number: int, distance: int) -> Array[Point]
-> 現状の[`table`](#initmoves-arraymovemove)から、[`get_lines(program_number)`](#get_linesprogram_number-int---mapint-arraylineline)
+> 現状の[`table`](#initmoves-arraymove)から、[`get_lines(program_number)`](#get_linesprogram_number-int---mapint-arrayline)
 >を用いて全ての[`Line`](#line)を取り出し、それぞれを両側に対して最大`distance`まで伸ばして得られる新たな[`Point`](#point)について、
 >禁じ手で無いものの配列を返す
 
@@ -222,7 +222,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 - `distance`: 両側の距離どれだけまで返却するか
 
 ### me -> int
-> 次に手を打つPlayerの番号を返却するproperty。[`moves_count`](#initmoves-arraymovemove)が1以下の場合は、適当に作成する
+> 次に手を打つPlayerの番号を返却するproperty。[`moves_count`](#initmoves-arraymove)が1以下の場合は、適当に作成する
 
 ### opponent(program_number: int) -> int
 > 与えられた`program_number`の対戦相手にあたるPlayerの番号を返却する
@@ -233,7 +233,7 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 > 自身のコピーを返却する
 
 ### is_black(program_number: int) -> bool
-> 与えられた`program_number`が先手の番号かどうかを返却する。[`moves_count`](#initmoves-arraymovemove)が0の時、
+> 与えられた`program_number`が先手の番号かどうかを返却する。[`moves_count`](#initmoves-arraymove)が0の時、
 >`program_number`にかかわらずTrueを返す
 
 - `program_number`: 計算するPlayerの番号
@@ -250,6 +250,6 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 ## write_data(filename: str, table: [`Table`](#table))
 > 与えられた`filename`の表すファイルにデータを書き込む。
 >この時、[`Config.TABLE_STARTS_WITH_ONE`](#table_starts_with_one)を使うこと。
-> [`table.moves_count`](#initmoves-arraymovemove)が0のとき(書き込む意味はないけど)は`0,`を出力する。
+> [`table.moves_count`](#initmoves-arraymove)が0のとき(書き込む意味はないけど)は`0,`を出力する。
 
 - `filename`: 書き込み先のファイル名
