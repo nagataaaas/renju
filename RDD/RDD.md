@@ -1,5 +1,10 @@
-# 目次
+# Renju RDD
 
+## RDDについて
+[GitHub](https://github.com/nagataaaas/renju/blob/main/RDD/RDD.md) の方に、目次や項目内の記述に適切な定義に飛べるサイト内リンクを張っているMarkDownファイルをおいています。
+実際に実装する場合は、そちらを参考にしてください。 (https://github.com/nagataaaas/renju/blob/main/RDD/RDD.md)
+
+# 目次
 - [Config](#config)
   - [TABLE_SIZE](#table_size)
   - [TABLE_STARTS_WITH_ONE](#table_starts_with_one)
