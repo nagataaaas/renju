@@ -91,14 +91,14 @@
 - `second`: [`Line`](#line)を作る両端の2点のうち、より正方向に近い方
 - `program_number`: [`Line`](#line)を作成したPlayerの番号
 
-### extend_first() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+### extend_first() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
 自身を、負方向に長さ1つ伸ばすよう試みる。盤面内に収まれば、(伸ばされた後の[Line](#line), 新たに設置された[`Point`](#point), True), 
-不可能であれば`(Null, False)`を返す。
+不可能であれば`(Null, Null, False)`を返す。
 盤面情報も加味した可否判断は[Table.line_extend_first](#line_extend_firstline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
 
-### extend_second() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+### extend_second() -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
 自身を、正方向に長さ1つ伸ばすよう試みる。盤面内に収まれば、(伸ばされた後の[`Line`](#line), 新たに設置された[`Point`](#point), True), 
-不可能であれば`(Null, False)`を返す。
+不可能であれば`(Null, Null, False)`を返す。
 盤面情報も加味した可否判断は[`Table.line_extend_second`](#line_extend_secondline-line-foul_check-bool---tupleline-point-true-or-tuplenull-null-false)に任せるので、ただ盤面範囲におさまるかの確認でかまわない。
 
 ### length -> int
@@ -203,12 +203,12 @@ keyとして存在しない[`Point`](#point)は、まだ設置されていない
 
 - `line`: 評価する[`Line`](#line)
 
-### line_extend_first(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+### line_extend_first(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
 > [`Line.extend_first`](#extend_first---tupleline-point-true-or-tuplenull-null-false)と同様に負方向に
 >[`Line`](#line)を延長する。ただし、[`Line.extend_first`](#extend_first---tupleline-point-true-or-tuplenull-null-false)の
 >不可能判定に加え、新たに設置する[`Point`](#point)が禁じ手になる場合も失敗とする。
 
-### line_extend_second(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, False]
+### line_extend_second(line: [`Line`](#line), foul_check: bool) -> Tuple[[`Line`](#line), [`Point`](#point), True] `or` Tuple[Null, Null, False]
 > [`Line.extend_second`](#extend_second---tupleline-point-true-or-tuplenull-null-false)と同様に負方向に
 >[`Line`](#line)を延長する。ただし、[`Line.extend_second`](#extend_second---tupleline-point-true-or-tuplenull-null-false)の
 >不可能判定に加え、新たに設置する[`Point`](#point)が禁じ手になる場合も失敗とする。
