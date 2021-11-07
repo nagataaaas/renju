@@ -29,7 +29,7 @@
   - [Table](#table)
     - [init(moves: Array[Move])](#initmoves-arraymove)
     - [compute()](#compute---tuplenull-null-or-tuplemove-bool)
-    - [compute_move(move: [Move])](#compute_move-move---bool)
+    - [compute_move(move: [Move])](#compute_movemove-move---bool)
     - [check_foul(move: [Move])](#check_foulmove-move---bool)
     - [is_win(program_number: int)](#is_winprogram_number-int---bool)
     - [get_lines(program_number: int)](#get_linesprogram_number-int---mapint-arrayline)
