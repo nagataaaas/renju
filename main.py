@@ -864,7 +864,7 @@ if __name__ == '__main__':
 
     count, data = load_data(filename)
 
-    table = Table(count, data)
+    table = Table(data)
     move, is_win = table.compute()
     print('current table:\n')
     table.pretty_print()
@@ -902,4 +902,4 @@ if __name__ == '__main__':
     #         break
     #     print('\n' * 5)
 
-    write_data(filename, table.moves)
+    write_data(filename, table)
