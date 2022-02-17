@@ -1,5 +1,8 @@
 # Renju Player
+# CPU vs CPU
+    $ python main.py data.txt
 
+# import and use
 ```python
 from main import Table, Move, Point, write_data
 table = Table(1, [Move(1, Point(7, 7))])
